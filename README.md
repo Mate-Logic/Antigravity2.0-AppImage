@@ -39,10 +39,9 @@ the latest release metadata. The workflow:
 6. Publishes the AppImage, zsync file, checksum manifests, and a release checksum table.
 
 Google currently does not publish a checksum for this archive. The source
-digest is therefore an identity for the exact bytes downloaded by this project,
-not an independently signed vendor attestation. A mismatch between the
-workflow's preflight download and the builder's download fails the build rather
-than packaging unverified bytes.
+digest is therefore an identity for the normalized package used by this project,
+not an independently signed vendor attestation. The resolver adds the desktop
+icon required by the AppImage builder before calculating that digest.
 
 ## Local development
 

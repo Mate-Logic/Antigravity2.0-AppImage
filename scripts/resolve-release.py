@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """Resolve, download, and fingerprint the current official Linux package.
 
-The download page is the source of truth.  Google does not publish a checksum
-for this archive, so the workflow fingerprints the bytes it downloads and then
-passes that digest to appimage-python, which verifies its own download before
-building.  A release is considered unchanged only when its source digest is
-available in the latest release.
+The download page is the source of truth. Google does not publish a checksum
+for this archive, so the workflow fingerprints the normalized package it passes
+to appimage-python after adding the required desktop icon.
 """
 
 from __future__ import annotations
@@ -17,6 +15,8 @@ import os
 import re
 import sys
 import gzip
+import io
+import tarfile
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -24,6 +24,13 @@ from urllib.request import Request, urlopen
 
 DOWNLOAD_PAGE = "https://antigravity.google/download"
 REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "")
+ICON_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><linearGradient id="g" x1="128" y1="420" x2="388" y2="72" gradientUnits="userSpaceOnUse">
+<stop stop-color="#287ff0"/><stop offset=".5" stop-color="#4388f5"/><stop offset="1" stop-color="#f43e3e"/>
+</linearGradient></defs>
+<path fill="url(#g)" d="M65 430c-7-10-5-24 4-33l62-62c31-32 51-68 68-119l31-91c7-21 26-36 48-36s41 15 48 36l31 91c17 51 37 87 68 119l62 62c9 9 11 23 4 33-8 12-24 16-37 8l-81-47c-42-25-68-62-85-112l-10-29-10 29c-17 50-43 87-85 112l-81 47c-13 8-29 4-37-8Z"/>
+</svg>
+"""
 
 
 class DownloadParser(html.parser.HTMLParser):
@@ -110,6 +117,27 @@ def request_text(url: str) -> bytes:
     return gzip.decompress(data) if data.startswith(b"\x1f\x8b") else data
 
 
+def add_icon(archive: Path) -> None:
+    """Add the project icon to the vendor archive for appimage-python."""
+    temporary = archive.with_suffix(".with-icon.tar.gz")
+    tar_buffer = io.BytesIO()
+    with tarfile.open(archive, mode="r:*") as source, tarfile.open(
+        fileobj=tar_buffer, mode="w"
+    ) as output:
+        members = source.getmembers()
+        root = members[0].name.split("/", 1)[0]
+        for member in members:
+            file = source.extractfile(member) if member.isfile() else None
+            output.addfile(member, file)
+        icon = tarfile.TarInfo(f"{root}/antigravity.svg")
+        icon.mode = 0o644
+        icon.mtime = 0
+        icon.size = len(ICON_SVG.encode("utf-8"))
+        output.addfile(icon, io.BytesIO(ICON_SVG.encode("utf-8")))
+    temporary.write_bytes(gzip.compress(tar_buffer.getvalue(), mtime=0))
+    temporary.replace(archive)
+
+
 def latest_source_hash() -> str | None:
     if "/" not in REPOSITORY:
         return None
@@ -148,6 +176,7 @@ def main() -> int:
     archive = Path.cwd() / "source" / "Antigravity.tar.gz"
     archive.parent.mkdir(parents=True, exist_ok=True)
     archive.write_bytes(request(parser.download_url))
+    add_icon(archive)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
 
     output("download_url", parser.download_url)
