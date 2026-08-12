@@ -1,4 +1,4 @@
-name: Build AntigravityIDE AppImage
+name: Build Antigravity 2.0 AppImage
 on:
   workflow_dispatch:
     inputs:
@@ -15,7 +15,7 @@ on:
 
 jobs:
   release:
-    name: Build and publish AntigravityIDE AppImage
+    name: Build and publish Antigravity 2.0 AppImage
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -44,7 +44,7 @@ jobs:
           version_icon: 'code.png'
           version_sha256: ${{ steps.source.outputs.sha256 }}
           version_archive: ${{ steps.source.outputs.archive_path }}
-          update_information: 'gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|AntigravityIDE*.AppImage.zsync'
+          update_information: 'gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|Antigravity*.AppImage.zsync'
       - name: Create checksum manifests
         if: steps.source.outputs.changed == 'true' || inputs.force == true
         run: |
@@ -56,13 +56,13 @@ jobs:
         if: steps.source.outputs.changed == 'true' || inputs.force == true
         uses: actions/upload-artifact@v4
         with:
-          name: AntigravityIDE-AppImage
+          name: Antigravity-AppImage
           path: 'dist'
       - name: Prepare release notes
         if: steps.source.outputs.changed == 'true' || inputs.force == true
         run: |
           {
-            echo "## Antigravity IDE ${{ steps.source.outputs.version }}"
+            echo "## Antigravity 2.0 ${{ steps.source.outputs.version }}"
             echo
             printf 'Built from the official Linux x86_64 archive. The source archive SHA-256 is `%s`.\n' '${{ steps.source.outputs.sha256 }}'
             echo
@@ -81,6 +81,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release view latest >/dev/null 2>&1 || gh release create latest --title "Antigravity IDE ${{ steps.source.outputs.version }}" --notes-file RELEASE_NOTES.md
-          gh release edit latest --title "Antigravity IDE ${{ steps.source.outputs.version }}" --notes-file RELEASE_NOTES.md --latest
+          gh release view latest >/dev/null 2>&1 || gh release create latest --title "Antigravity 2.0 ${{ steps.source.outputs.version }}" --notes-file RELEASE_NOTES.md
+          gh release edit latest --title "Antigravity 2.0 ${{ steps.source.outputs.version }}" --notes-file RELEASE_NOTES.md --latest
           gh release upload latest dist/* --clobber

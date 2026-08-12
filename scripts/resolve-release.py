@@ -29,7 +29,8 @@ REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "")
 class DownloadParser(html.parser.HTMLParser):
     def __init__(self) -> None:
         super().__init__()
-        self.in_ide = False
+        self.in_product = False
+        self.is_antigravity_2 = False
         self.section_depth = 0
         self.anchor: tuple[str, str, list[str]] | None = None
         self.heading: list[str] | None = None
@@ -40,18 +41,19 @@ class DownloadParser(html.parser.HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attributes = dict(attrs)
-        if tag == "section" and attributes.get("id") == "antigravity-ide":
-            self.in_ide = True
+        if tag == "section" and not self.in_product:
+            self.in_product = True
             self.section_depth = 1
-        elif self.in_ide and tag == "section":
+            self.is_antigravity_2 = False
+        elif self.in_product and tag == "section":
             self.section_depth += 1
-        if self.in_ide and tag == "h3":
+        if self.in_product and tag in {"h2", "h3"}:
             self.heading = []
-        if self.in_ide and tag == "a":
+        if self.in_product and tag == "a":
             href = attributes.get("href", "") or ""
             classes = attributes.get("class", "") or ""
             self.anchor = (href, classes, [])
-        if self.in_ide and "nav-version-chip" in (attributes.get("class", "") or ""):
+        if self.is_antigravity_2 and "nav-version-chip" in (attributes.get("class", "") or ""):
             self.version_text = []
 
     def handle_data(self, data: str) -> None:
@@ -63,14 +65,19 @@ class DownloadParser(html.parser.HTMLParser):
             self.version_text.append(data)
 
     def handle_endtag(self, tag: str) -> None:
-        if tag == "h3" and self.heading is not None:
-            self.platform = " ".join("".join(self.heading).split()).lower()
+        if tag in {"h2", "h3"} and self.heading is not None:
+            heading = " ".join("".join(self.heading).split()).lower()
+            if tag == "h2":
+                self.is_antigravity_2 = heading == "antigravity 2.0"
+            else:
+                self.platform = heading
             self.heading = None
         if tag == "a" and self.anchor:
             href, classes, text = self.anchor
             label = " ".join("".join(text).split()).lower()
             if (
-                self.platform == "linux"
+                self.is_antigravity_2
+                and self.platform == "linux"
                 and "button-primary" in classes
                 and label == "download for x64"
                 and "linux-x64" in href
@@ -83,16 +90,17 @@ class DownloadParser(html.parser.HTMLParser):
             if match:
                 self.version = match.group(1)
             self.version_text = None
-        if tag == "section" and self.in_ide:
+        if tag == "section" and self.in_product:
             self.section_depth -= 1
             if self.section_depth == 0:
-                self.in_ide = False
+                self.in_product = False
+                self.is_antigravity_2 = False
 
 
 def request(url: str) -> bytes:
     """Fetch bytes without changing archive contents."""
     return urlopen(
-        Request(url, headers={"User-Agent": "AntigravityIDE-AppImage"}), timeout=60
+        Request(url, headers={"User-Agent": "Antigravity-AppImage"}), timeout=60
     ).read()
 
 
@@ -106,7 +114,7 @@ def latest_source_hash() -> str | None:
     if "/" not in REPOSITORY:
         return None
     api = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
-    headers = {"User-Agent": "AntigravityIDE-AppImage", "Accept": "application/vnd.github+json"}
+    headers = {"User-Agent": "Antigravity-AppImage", "Accept": "application/vnd.github+json"}
     token = os.environ.get("GITHUB_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -135,7 +143,7 @@ def main() -> int:
     parser = DownloadParser()
     parser.feed(request_text(DOWNLOAD_PAGE).decode("utf-8"))
     if not parser.download_url or not parser.version:
-        raise RuntimeError("Could not find the current Linux x64 package on the download page")
+        raise RuntimeError("Could not find the current Antigravity 2.0 Linux x64 package")
 
     archive = Path.cwd() / "source" / "Antigravity.tar.gz"
     archive.parent.mkdir(parents=True, exist_ok=True)

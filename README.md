@@ -1,9 +1,9 @@
-# AntigravityIDE AppImage
+# Antigravity 2.0 AppImage
 
 [![Build and publish](https://github.com/tyvsmith/Antigravity-AppImage/actions/workflows/release.yml/badge.svg)](https://github.com/tyvsmith/Antigravity-AppImage/actions/workflows/release.yml)
 
-An unofficial, community-maintained AppImage distribution of the Google
-Antigravity IDE for Linux x86_64.
+An unofficial, community-maintained AppImage distribution of Google Antigravity
+2.0 for Linux x86_64.
 
 ## Download
 
@@ -18,8 +18,8 @@ downloaded from the official [Antigravity download page](https://antigravity.goo
 ## Run
 
 ```bash
-chmod +x AntigravityIDE*.AppImage
-./AntigravityIDE*.AppImage
+chmod +x Antigravity*.AppImage
+./Antigravity*.AppImage
 ```
 
 AppImage update metadata is embedded in each image. Compatible AppImage
@@ -31,7 +31,7 @@ The scheduled workflow runs every six hours and also supports manual runs. A
 manual run can set `force` to rebuild the current source and repair or refresh
 the latest release metadata. The workflow:
 
-1. Parses the official download page to find the current Linux x86_64 archive.
+1. Parses the official download page to find the current Antigravity 2.0 Linux x86_64 archive.
 2. Downloads the archive and computes its SHA-256 digest.
 3. Compares that digest with the `SOURCE-SHA256` asset of the latest release.
 4. Stops without publishing when the source bytes have not changed.
