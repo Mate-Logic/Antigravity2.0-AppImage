@@ -39,9 +39,9 @@ jobs:
         uses: Mate-Logic/appimage-python@main
         with:
           version_url: ${{ steps.source.outputs.download_url }}
-          version_file: 'resources/app/product.json'
-          version_bash: 'jq -r ".ideVersion"'
-          version_icon: 'code.png'
+          version_file: 'resources/app-update.yml'
+          version_bash: "printf '%s\\n' '${{ steps.source.outputs.version }}'"
+          version_icon: 'antigravity.svg'
           version_sha256: ${{ steps.source.outputs.sha256 }}
           version_archive: ${{ steps.source.outputs.archive_path }}
           update_information: 'gh-releases-zsync|${{ github.repository_owner }}|${{ github.event.repository.name }}|latest|Antigravity*.AppImage.zsync'
