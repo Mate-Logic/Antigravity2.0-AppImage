@@ -47,7 +47,11 @@ class DownloadParser(html.parser.HTMLParser):
         self.version = ""
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        attributes = dict(attrs)
+        # The download links repeat the class attribute; per the HTML spec the
+        # first occurrence of a duplicated attribute wins.
+        attributes: dict[str, str | None] = {}
+        for name, value in attrs:
+            attributes.setdefault(name, value)
         if tag == "section" and not self.in_product:
             self.in_product = True
             self.section_depth = 1
